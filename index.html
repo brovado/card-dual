@@ -1,1 +1,1001 @@
-index
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Card RPG — Storybook Runner (MVP)</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: #0c0e16;
+        color: #e9ecf2;
+        --panel-bg: #151927;
+        --panel-border: #2b3042;
+        --accent: #7dd3fc;
+        --accent-2: #fda4af;
+        --success: #34d399;
+        --warning: #fbbf24;
+        --danger: #f87171;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(circle at top, #1f2437 0%, #0c0e16 55%, #080a12 100%);
+      }
+
+      .app {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        padding: 24px;
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .header-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0;
+        font-weight: 600;
+      }
+
+      .muted {
+        color: #9aa3b2;
+      }
+
+      .screen {
+        display: none;
+      }
+
+      .screen.active {
+        display: block;
+      }
+
+      .screen-panel {
+        background: var(--panel-bg);
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+      }
+
+      .button-row,
+      .story-grid,
+      .class-grid {
+        display: grid;
+        gap: 14px;
+      }
+
+      .button-row {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        margin-top: 20px;
+      }
+
+      button {
+        background: linear-gradient(135deg, #1f2937, #111827);
+        color: #e5e7eb;
+        border: 1px solid #374151;
+        padding: 12px 16px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+      }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .secondary {
+        background: transparent;
+        border: 1px solid #475569;
+      }
+
+      .primary {
+        border-color: var(--accent);
+        color: #0f172a;
+        background: linear-gradient(135deg, var(--accent), #38bdf8);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: 1.35fr 1fr;
+        gap: 18px;
+      }
+
+      .bottom-row {
+        display: grid;
+        grid-template-columns: 0.9fr 1fr 1.15fr;
+        gap: 18px;
+      }
+
+      .panel-title {
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        margin-bottom: 12px;
+      }
+
+      .story-text {
+        font-size: 1.05rem;
+        line-height: 1.6;
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: #1f2937;
+        border-radius: 999px;
+        border: 1px solid #334155;
+        font-size: 0.85rem;
+      }
+
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .card-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .card {
+        background: #0f172a;
+        border: 1px solid #334155;
+        padding: 10px 12px;
+        border-radius: 12px;
+        min-width: 70px;
+        text-align: center;
+        cursor: pointer;
+        transition: border 0.15s ease, transform 0.15s ease;
+      }
+
+      .card.selected {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(125, 211, 252, 0.2);
+      }
+
+      .card .suit {
+        font-size: 1.2rem;
+      }
+
+      .outcome {
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid #334155;
+        background: #111827;
+        min-height: 72px;
+      }
+
+      .outcome.success {
+        border-color: rgba(52, 211, 153, 0.7);
+        background: rgba(16, 185, 129, 0.12);
+      }
+
+      .outcome.partial {
+        border-color: rgba(251, 191, 36, 0.7);
+        background: rgba(251, 191, 36, 0.1);
+      }
+
+      .outcome.fail {
+        border-color: rgba(248, 113, 113, 0.7);
+        background: rgba(248, 113, 113, 0.1);
+      }
+
+      .nav-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+
+      .story-card,
+      .class-card {
+        padding: 16px;
+        border-radius: 14px;
+        border: 1px solid #2f364d;
+        background: #121724;
+      }
+
+      .class-card button {
+        margin-top: 12px;
+        width: 100%;
+      }
+
+      .log {
+        max-height: 200px;
+        overflow: auto;
+        padding-right: 6px;
+      }
+
+      .log-entry {
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed #2f374f;
+      }
+
+      .tag {
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      @media (max-width: 1100px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .bottom-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="header-bar">
+        <div>
+          <h1>Card RPG — Storybook Runner</h1>
+          <p class="muted">A single-deck narrative adventure. Play cards to resolve each panel.</p>
+        </div>
+        <div class="pill" id="saveStatus">No save loaded</div>
+      </div>
+
+      <section class="screen screen-panel active" id="bootScreen">
+        <h2>Boot Screen</h2>
+        <p class="muted">
+          Choose your path. Continue if you already have a saved adventure in this browser.
+        </p>
+        <div class="button-row">
+          <button class="primary" id="newGameBtn">New Game</button>
+          <button id="loadGameBtn">Load Game</button>
+          <button id="continueBtn">Continue</button>
+        </div>
+      </section>
+
+      <section class="screen screen-panel" id="storyScreen">
+        <div class="header-bar">
+          <h2>Story Selector</h2>
+          <button class="secondary" id="storyBackBtn">Back</button>
+        </div>
+        <div class="story-grid" id="storyGrid"></div>
+      </section>
+
+      <section class="screen screen-panel" id="classScreen">
+        <div class="header-bar">
+          <h2>Class Select</h2>
+          <button class="secondary" id="classBackBtn">Back</button>
+        </div>
+        <div class="class-grid" id="classGrid"></div>
+      </section>
+
+      <section class="screen screen-panel" id="gameScreen">
+        <div class="layout">
+          <div class="screen-panel">
+            <div class="panel-title">Story / Page View</div>
+            <h2 id="pageTitle">Page Title</h2>
+            <p class="story-text" id="pageText"></p>
+            <div class="nav-row">
+              <button class="secondary" id="prevPageBtn">Previous Page</button>
+              <button class="primary" id="nextPageBtn">Next Page</button>
+            </div>
+          </div>
+          <div class="screen-panel">
+            <div class="panel-title">Panel / Resolution View</div>
+            <h3 id="panelTitle">Panel Challenge</h3>
+            <p class="muted" id="panelChallenge"></p>
+            <div class="pill" id="panelMeta"></div>
+            <div class="outcome" id="panelOutcome">Play a card to resolve this panel.</div>
+            <div class="log" id="log"></div>
+          </div>
+        </div>
+
+        <div class="bottom-row">
+          <div class="screen-panel">
+            <div class="panel-title">Player Info</div>
+            <div class="stat-grid">
+              <div class="pill" id="playerClass"></div>
+              <div class="pill" id="playerHP"></div>
+              <div class="pill" id="playerStatus"></div>
+              <div class="pill" id="playerFace"></div>
+            </div>
+            <h4>Suit Modifiers</h4>
+            <div class="stat-grid" id="modGrid"></div>
+            <h4>Trophies / Marks</h4>
+            <p class="muted" id="trophyList">None yet.</p>
+          </div>
+
+          <div class="screen-panel">
+            <div class="panel-title">Deck Area</div>
+            <div class="stat-grid">
+              <div class="pill" id="deckCount"></div>
+              <div class="pill" id="discardCount"></div>
+            </div>
+            <div class="nav-row">
+              <button class="primary" id="drawBtn">Draw</button>
+              <button id="redrawBtn">Redraw (-1 HP)</button>
+              <button class="secondary" id="burnBtn">Burn</button>
+            </div>
+            <div class="nav-row">
+              <button class="secondary" id="saveBtn">Save</button>
+              <button class="secondary" id="clearSaveBtn">Clear Save</button>
+            </div>
+          </div>
+
+          <div class="screen-panel">
+            <div class="panel-title">Cards to Play</div>
+            <div class="card-row" id="handArea"></div>
+            <div class="nav-row">
+              <button class="primary" id="playBtn">Play Selected</button>
+              <button class="secondary" id="playFaceBtn">Use Face Power</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const SAVE_KEY = "card-dual-save";
+
+      const suits = {
+        hearts: { symbol: "♥", label: "Presence" },
+        spades: { symbol: "♠", label: "Willpower" },
+        diamonds: { symbol: "♦", label: "Dexterity" },
+        clubs: { symbol: "♣", label: "Strength" },
+      };
+
+      const classes = [
+        {
+          id: "warrior",
+          name: "Warrior",
+          mods: { hearts: 0, spades: 1, diamonds: 0, clubs: 2 },
+          facePower: "Deal 15 damage on combat panels.",
+        },
+        {
+          id: "sage",
+          name: "Sage",
+          mods: { hearts: 1, spades: 2, diamonds: 0, clubs: 0 },
+          facePower: "Peek at the next 3 cards. Reorder or discard 1.",
+        },
+        {
+          id: "trickster",
+          name: "Trickster",
+          mods: { hearts: 2, spades: 0, diamonds: 1, clubs: 0 },
+          facePower: "Auto-succeed non-combat panels with DR ≤ 8.",
+        },
+        {
+          id: "bard",
+          name: "Bard",
+          mods: { hearts: 2, spades: 0, diamonds: 0, clubs: 1 },
+          facePower: "Next Hearts check gets -3 DR.",
+        },
+        {
+          id: "grovekeeper",
+          name: "Grovekeeper",
+          mods: { hearts: 1, spades: 1, diamonds: 0, clubs: 1 },
+          facePower: "Heal 4 HP (capped at max).",
+        },
+      ];
+
+      const storyData = [
+        {
+          id: "cinders",
+          title: "Cinders of the Skybridge",
+          synopsis:
+            "Escort a sky-cart through a shattered bridge. Win allies, survive raiders, and claim the last ember.",
+          pages: [
+            {
+              title: "Page 1 — The Shattered Gate",
+              text:
+                "You reach the broken span of Skybridge. The wind screams through split stone as a lone scout signals for help.",
+              panels: [
+                {
+                  title: "Call of the Scout",
+                  challenge: "Convince the scout to lower the winch-lift.",
+                  suit: "hearts",
+                  dr: 9,
+                  type: "social",
+                  success:
+                    "The scout trusts you, lowering the lift and sharing a map of the span.",
+                  partial:
+                    "The lift drops but the scout demands a favor later.",
+                  fail:
+                    "The scout refuses. You climb anyway, taking a bruise (-1 HP).",
+                  effects: { onFail: { hp: -1 }, onPartial: { mark: "Owed Favor" } },
+                },
+              ],
+            },
+            {
+              title: "Page 2 — Broken Midspan",
+              text:
+                "Halfway across, the stone path splinters into narrow beams. A raider crew closes in from the fog.",
+              panels: [
+                {
+                  title: "Balancing Dash",
+                  challenge: "Dash across the cracked beams with the cart.",
+                  suit: "diamonds",
+                  dr: 11,
+                  type: "movement",
+                  success: "You glide across, keeping the cart steady.",
+                  partial: "You cross but the cart jolts; lose 1 HP.",
+                  fail: "You stumble, dropping supplies; lose 2 HP.",
+                  effects: { onPartial: { hp: -1 }, onFail: { hp: -2 } },
+                },
+                {
+                  title: "Fog Raiders",
+                  challenge: "Hold off the raiders in the tight corridor.",
+                  suit: "clubs",
+                  dr: 12,
+                  type: "combat",
+                  success: "You drive them back, clearing the path.",
+                  partial: "They retreat, but you take a hit (-2 HP).",
+                  fail: "They overwhelm you. Lose 3 HP and drop a mark.",
+                  effects: { onPartial: { hp: -2 }, onFail: { hp: -3, mark: "Bruised" } },
+                },
+              ],
+            },
+            {
+              title: "Page 3 — The Ember Vault",
+              text:
+                "At the vault door, the ancient ember flickers behind runes. A final test awaits before the bridge ends.",
+              panels: [
+                {
+                  title: "Runic Lock",
+                  challenge: "Solve the rune lattice before the vault seals.",
+                  suit: "spades",
+                  dr: 13,
+                  type: "puzzle",
+                  success: "The vault opens. You claim the ember.",
+                  partial:
+                    "You force it open with effort. Lose 1 HP but take the ember.",
+                  fail: "The lock snaps shut, draining your strength (-2 HP).",
+                  effects: { onPartial: { hp: -1 }, onFail: { hp: -2 } },
+                },
+              ],
+              trophy: "Emberkeeper of Skybridge",
+            },
+          ],
+        },
+      ];
+
+      let state = null;
+      let selectedCardId = null;
+
+      const screens = {
+        boot: document.getElementById("bootScreen"),
+        story: document.getElementById("storyScreen"),
+        class: document.getElementById("classScreen"),
+        game: document.getElementById("gameScreen"),
+      };
+
+      const saveStatus = document.getElementById("saveStatus");
+      const continueBtn = document.getElementById("continueBtn");
+      const loadGameBtn = document.getElementById("loadGameBtn");
+
+      function showScreen(name) {
+        Object.values(screens).forEach((screen) => screen.classList.remove("active"));
+        screens[name].classList.add("active");
+      }
+
+      function generateDeck() {
+        const deck = [];
+        Object.keys(suits).forEach((suit) => {
+          for (let value = 2; value <= 14; value += 1) {
+            deck.push({
+              id: `${suit}-${value}-${Math.random().toString(36).slice(2, 7)}`,
+              suit,
+              value,
+            });
+          }
+        });
+        return shuffle(deck);
+      }
+
+      function shuffle(cards) {
+        const array = [...cards];
+        for (let i = array.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function getCardLabel(card) {
+        const valueMap = { 11: "J", 12: "Q", 13: "K", 14: "A" };
+        return `${valueMap[card.value] || card.value}${suits[card.suit].symbol}`;
+      }
+
+      function cardValue(card) {
+        if (card.value >= 11) return 10;
+        return card.value;
+      }
+
+      function isFaceCard(card) {
+        return card.value >= 11;
+      }
+
+      function startNewGame(storyId, classId) {
+        const newState = {
+          storyId,
+          classId,
+          pageIndex: 0,
+          panelIndex: 0,
+          maxHP: 10,
+          hp: 10,
+          trophies: [],
+          marks: [],
+          deck: generateDeck(),
+          discard: [],
+          hand: [],
+          log: [],
+          status: "Ready",
+          nextHeartsBonus: 0,
+          lastOutcome: "",
+        };
+        state = newState;
+        drawToHand();
+        updateUI();
+        showScreen("game");
+      }
+
+      function drawToHand() {
+        while (state.hand.length < 5 && state.deck.length > 0) {
+          state.hand.push(state.deck.shift());
+        }
+      }
+
+      function getStory() {
+        return storyData.find((story) => story.id === state.storyId);
+      }
+
+      function getPage() {
+        return getStory().pages[state.pageIndex];
+      }
+
+      function getPanel() {
+        return getPage().panels[state.panelIndex];
+      }
+
+      function selectCard(cardId) {
+        selectedCardId = selectedCardId === cardId ? null : cardId;
+        updateHand();
+      }
+
+      function updateHand() {
+        const handArea = document.getElementById("handArea");
+        handArea.innerHTML = "";
+        state.hand.forEach((card) => {
+          const cardEl = document.createElement("div");
+          cardEl.className = "card";
+          if (card.id === selectedCardId) {
+            cardEl.classList.add("selected");
+          }
+          cardEl.innerHTML = `<div>${getCardLabel(card)}</div><div class="muted">${suits[card.suit].label}</div>`;
+          cardEl.addEventListener("click", () => selectCard(card.id));
+          handArea.appendChild(cardEl);
+        });
+      }
+
+      function addLog(message) {
+        state.log.unshift({ message, timestamp: new Date().toLocaleTimeString() });
+        if (state.log.length > 8) {
+          state.log.pop();
+        }
+      }
+
+      function applyEffects(effects) {
+        if (!effects) return;
+        if (effects.hp) {
+          state.hp = Math.max(0, Math.min(state.maxHP, state.hp + effects.hp));
+        }
+        if (effects.mark) {
+          state.marks.push(effects.mark);
+        }
+        if (effects.trophy) {
+          state.trophies.push(effects.trophy);
+        }
+      }
+
+      function resolvePanel(outcome) {
+        const panel = getPanel();
+        const outcomeText = panel[outcome] || "Outcome resolved.";
+        const outcomeEl = document.getElementById("panelOutcome");
+        outcomeEl.className = `outcome ${outcome}`;
+        outcomeEl.textContent = outcomeText;
+        addLog(`${panel.title}: ${outcome.toUpperCase()}. ${outcomeText}`);
+        if (outcome === "success") {
+          applyEffects(panel.effects?.onSuccess);
+        } else if (outcome === "partial") {
+          applyEffects(panel.effects?.onPartial);
+        } else {
+          applyEffects(panel.effects?.onFail);
+        }
+        advancePanel();
+      }
+
+      function advancePanel() {
+        const page = getPage();
+        if (state.panelIndex < page.panels.length - 1) {
+          state.panelIndex += 1;
+          state.status = "Panel advanced";
+        } else {
+          if (page.trophy) {
+            if (!state.trophies.includes(page.trophy)) {
+              state.trophies.push(page.trophy);
+              addLog(`Trophy earned: ${page.trophy}.`);
+            }
+          }
+          if (state.pageIndex < getStory().pages.length - 1) {
+            state.pageIndex += 1;
+            state.panelIndex = 0;
+            state.status = "Page advanced";
+            addLog("Page cleared. Advance to the next page.");
+          } else {
+            state.status = "Story complete";
+            addLog("Story complete. You claimed the ember.");
+          }
+        }
+        selectedCardId = null;
+        updateUI();
+      }
+
+      function evaluateCard(card) {
+        const panel = getPanel();
+        const classInfo = classes.find((item) => item.id === state.classId);
+        const mod = classInfo.mods[panel.suit] || 0;
+        let dr = panel.dr;
+        if (panel.suit === "hearts" && state.nextHeartsBonus) {
+          dr = Math.max(0, dr + state.nextHeartsBonus);
+          state.nextHeartsBonus = 0;
+        }
+        const total = cardValue(card) + mod;
+        let outcome = "fail";
+        if (total >= dr) {
+          outcome = "success";
+        } else if (dr - total <= 2) {
+          outcome = "partial";
+        }
+        state.lastOutcome = `${getCardLabel(card)} (${total} vs DR ${dr})`;
+        resolvePanel(outcome);
+      }
+
+      function playSelectedCard() {
+        if (!selectedCardId) return;
+        const cardIndex = state.hand.findIndex((card) => card.id === selectedCardId);
+        if (cardIndex === -1) return;
+        const [card] = state.hand.splice(cardIndex, 1);
+        state.discard.push(card);
+        if (isFaceCard(card)) {
+          addLog("Face card played for normal resolution. Use power for special effects.");
+        }
+        evaluateCard(card);
+        drawToHand();
+        updateUI();
+      }
+
+      function useFacePower() {
+        if (!selectedCardId) return;
+        const cardIndex = state.hand.findIndex((card) => card.id === selectedCardId);
+        if (cardIndex === -1) return;
+        const card = state.hand[cardIndex];
+        if (!isFaceCard(card)) {
+          addLog("Only face cards (J/Q/K/A) can trigger class powers.");
+          updateUI();
+          return;
+        }
+        const panel = getPanel();
+        const classInfo = classes.find((item) => item.id === state.classId);
+        const power = classInfo.id;
+        if (power === "warrior") {
+          if (panel.type === "combat") {
+            addLog("Warrior power: combat blow for 15 damage. Auto success.");
+            discardSelectedFace(cardIndex);
+            resolvePanel("success");
+          } else {
+            addLog("Warrior power only works on combat panels.");
+          }
+        }
+        if (power === "sage") {
+          const peek = state.deck.slice(0, 3);
+          if (peek.length === 0) {
+            addLog("Sage power: deck is empty.");
+          } else {
+            const names = peek.map(getCardLabel).join(", ");
+            addLog(`Sage power: peeked ${names}. Discarded the first.`);
+            state.discard.push(state.deck.shift());
+          }
+          discardSelectedFace(cardIndex);
+        }
+        if (power === "trickster") {
+          if (panel.type !== "combat" && panel.dr <= 8) {
+            addLog("Trickster power: auto success!");
+            discardSelectedFace(cardIndex);
+            resolvePanel("success");
+          } else {
+            addLog("Trickster power only works on non-combat panels with DR ≤ 8.");
+          }
+        }
+        if (power === "bard") {
+          addLog("Bard power: next Hearts check gets -3 DR.");
+          state.nextHeartsBonus = -3;
+          discardSelectedFace(cardIndex);
+        }
+        if (power === "grovekeeper") {
+          const before = state.hp;
+          state.hp = Math.min(state.maxHP, state.hp + 4);
+          addLog(`Grovekeeper power: healed ${state.hp - before} HP.`);
+          discardSelectedFace(cardIndex);
+        }
+        updateUI();
+      }
+
+      function discardSelectedFace(cardIndex) {
+        const [card] = state.hand.splice(cardIndex, 1);
+        state.discard.push(card);
+        selectedCardId = null;
+        drawToHand();
+      }
+
+      function drawCard() {
+        if (state.deck.length === 0) {
+          state.status = "Deck empty — Game Over";
+          addLog("Deck is empty. Game over.");
+          updateUI();
+          return;
+        }
+        if (state.hand.length >= 5) {
+          addLog("Hand is full.");
+          updateUI();
+          return;
+        }
+        state.hand.push(state.deck.shift());
+        updateUI();
+      }
+
+      function redrawCard() {
+        if (!selectedCardId) return;
+        if (state.hp <= 1) {
+          addLog("Redraw blocked: HP would drop to 0.");
+          updateUI();
+          return;
+        }
+        const cardIndex = state.hand.findIndex((card) => card.id === selectedCardId);
+        if (cardIndex === -1) return;
+        const [card] = state.hand.splice(cardIndex, 1);
+        state.discard.push(card);
+        state.hp -= 1;
+        if (state.deck.length > 0) {
+          state.hand.push(state.deck.shift());
+        }
+        selectedCardId = null;
+        updateUI();
+      }
+
+      function burnCard() {
+        if (!selectedCardId) return;
+        const cardIndex = state.hand.findIndex((card) => card.id === selectedCardId);
+        if (cardIndex === -1) return;
+        const [card] = state.hand.splice(cardIndex, 1);
+        state.discard.push(card);
+        selectedCardId = null;
+        updateUI();
+      }
+
+      function saveGame() {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+        saveStatus.textContent = "Saved!";
+      }
+
+      function loadGame() {
+        const saved = localStorage.getItem(SAVE_KEY);
+        if (!saved) return false;
+        state = JSON.parse(saved);
+        selectedCardId = null;
+        updateUI();
+        return true;
+      }
+
+      function clearSave() {
+        localStorage.removeItem(SAVE_KEY);
+        saveStatus.textContent = "Save cleared";
+        continueBtn.disabled = true;
+        loadGameBtn.disabled = true;
+      }
+
+      function updateUI() {
+        if (!state) return;
+        const story = getStory();
+        const page = getPage();
+        const panel = getPanel();
+        document.getElementById("pageTitle").textContent = page.title;
+        document.getElementById("pageText").textContent = page.text;
+        document.getElementById("panelTitle").textContent = panel.title;
+        document.getElementById("panelChallenge").textContent = panel.challenge;
+        document.getElementById(
+          "panelMeta"
+        ).textContent = `${suits[panel.suit].symbol} ${suits[panel.suit].label} • DR ${panel.dr} • ${panel.type}`;
+
+        const classInfo = classes.find((item) => item.id === state.classId);
+        document.getElementById("playerClass").textContent = `Class: ${classInfo.name}`;
+        document.getElementById("playerHP").textContent = `HP: ${state.hp}/${state.maxHP}`;
+        document.getElementById("playerStatus").textContent = `Status: ${state.status}`;
+        document.getElementById("playerFace").textContent = `Face Power: ${classInfo.facePower}`;
+
+        const modGrid = document.getElementById("modGrid");
+        modGrid.innerHTML = "";
+        Object.keys(suits).forEach((suit) => {
+          const mod = classInfo.mods[suit];
+          const el = document.createElement("div");
+          el.className = "pill";
+          el.textContent = `${suits[suit].symbol} ${suits[suit].label}: ${mod >= 0 ? "+" : ""}${mod}`;
+          modGrid.appendChild(el);
+        });
+
+        const trophies = [...state.trophies, ...state.marks];
+        document.getElementById("trophyList").textContent =
+          trophies.length === 0 ? "None yet." : trophies.join(" • ");
+
+        document.getElementById(
+          "deckCount"
+        ).textContent = `Deck: ${state.deck.length}`;
+        document.getElementById(
+          "discardCount"
+        ).textContent = `Discard: ${state.discard.length}`;
+
+        updateHand();
+
+        const logEl = document.getElementById("log");
+        logEl.innerHTML = "";
+        state.log.forEach((entry) => {
+          const el = document.createElement("div");
+          el.className = "log-entry";
+          el.innerHTML = `<div class="tag">${entry.timestamp}</div><div>${entry.message}</div>`;
+          logEl.appendChild(el);
+        });
+
+        const outcomeEl = document.getElementById("panelOutcome");
+        if (state.lastOutcome) {
+          outcomeEl.textContent = `Last play: ${state.lastOutcome}`;
+        }
+
+        document.getElementById("nextPageBtn").disabled =
+          state.panelIndex < page.panels.length - 1;
+        document.getElementById("prevPageBtn").disabled = state.pageIndex === 0;
+
+        saveStatus.textContent = "Game active";
+      }
+
+      function buildStoryGrid() {
+        const storyGrid = document.getElementById("storyGrid");
+        storyGrid.innerHTML = "";
+        storyData.forEach((story) => {
+          const card = document.createElement("div");
+          card.className = "story-card";
+          card.innerHTML = `<h3>${story.title}</h3><p class="muted">${story.synopsis}</p>`;
+          const button = document.createElement("button");
+          button.className = "primary";
+          button.textContent = "Select Story";
+          button.addEventListener("click", () => {
+            state = { storyId: story.id };
+            buildClassGrid();
+            showScreen("class");
+          });
+          card.appendChild(button);
+          storyGrid.appendChild(card);
+        });
+      }
+
+      function buildClassGrid() {
+        const classGrid = document.getElementById("classGrid");
+        classGrid.innerHTML = "";
+        classes.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "class-card";
+          card.innerHTML = `<h3>${item.name}</h3>
+            <p class="muted">Face Power: ${item.facePower}</p>`;
+          const modList = document.createElement("div");
+          modList.className = "stat-grid";
+          Object.keys(suits).forEach((suit) => {
+            const mod = item.mods[suit];
+            const el = document.createElement("div");
+            el.className = "pill";
+            el.textContent = `${suits[suit].symbol} ${suits[suit].label}: ${mod >= 0 ? "+" : ""}${mod}`;
+            modList.appendChild(el);
+          });
+          card.appendChild(modList);
+          const button = document.createElement("button");
+          button.className = "primary";
+          button.textContent = "Begin Adventure";
+          button.addEventListener("click", () => startNewGame(state.storyId, item.id));
+          card.appendChild(button);
+          classGrid.appendChild(card);
+        });
+      }
+
+      document.getElementById("newGameBtn").addEventListener("click", () => {
+        buildStoryGrid();
+        showScreen("story");
+      });
+
+      document.getElementById("storyBackBtn").addEventListener("click", () => {
+        showScreen("boot");
+      });
+
+      document.getElementById("classBackBtn").addEventListener("click", () => {
+        showScreen("story");
+      });
+
+      document.getElementById("loadGameBtn").addEventListener("click", () => {
+        if (loadGame()) {
+          showScreen("game");
+        }
+      });
+
+      continueBtn.addEventListener("click", () => {
+        if (loadGame()) {
+          showScreen("game");
+        }
+      });
+
+      document.getElementById("drawBtn").addEventListener("click", drawCard);
+      document.getElementById("redrawBtn").addEventListener("click", redrawCard);
+      document.getElementById("burnBtn").addEventListener("click", burnCard);
+      document.getElementById("playBtn").addEventListener("click", playSelectedCard);
+      document.getElementById("playFaceBtn").addEventListener("click", useFacePower);
+      document.getElementById("saveBtn").addEventListener("click", saveGame);
+      document.getElementById("clearSaveBtn").addEventListener("click", clearSave);
+
+      document.getElementById("prevPageBtn").addEventListener("click", () => {
+        if (state.pageIndex === 0) return;
+        state.pageIndex -= 1;
+        state.panelIndex = 0;
+        state.status = "Moved to previous page";
+        updateUI();
+      });
+
+      document.getElementById("nextPageBtn").addEventListener("click", () => {
+        const page = getPage();
+        if (state.panelIndex < page.panels.length - 1) return;
+        if (state.pageIndex < getStory().pages.length - 1) {
+          state.pageIndex += 1;
+          state.panelIndex = 0;
+          state.status = "Moved to next page";
+          updateUI();
+        }
+      });
+
+      function initializeBoot() {
+        const hasSave = Boolean(localStorage.getItem(SAVE_KEY));
+        continueBtn.disabled = !hasSave;
+        loadGameBtn.disabled = !hasSave;
+        saveStatus.textContent = hasSave ? "Save detected" : "No save detected";
+      }
+
+      initializeBoot();
+    </script>
+  </body>
+</html>
